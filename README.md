@@ -7,9 +7,11 @@ This extension abuses internal APIs and is likely to break without warning due t
 ## Running this extension
 
 1. Clone this repository.
-2. Load this directory in Chrome as an [unpacked extension](https://developer.chrome.com/docs/extensions/mv3/getstarted/development-basics/#load-unpacked).
-3. Navigate to a webpage and open the devtools window.
-4. Navigate to the new devtools panel named "demo panel", and click on the button.
+2. Run `npm install` and `npm run build`
+3. Load the `dist` directory in Chrome as an [unpacked extension](https://developer.chrome.com/docs/extensions/mv3/getstarted/development-basics/#load-unpacked).
+4. Optionally, run `npm run dev` and start editing the code.
+5. Navigate to a webpage and open the devtools window.
+6. Click on the new devtools panel named "Automerge".
 
 ## Acknowledgements
 
