@@ -9,9 +9,13 @@ This extension abuses internal APIs and is likely to break without warning due t
 1. Clone this repository.
 2. Run `npm install` and `npm run build`
 3. Load the `dist` directory in Chrome as an [unpacked extension](https://developer.chrome.com/docs/extensions/mv3/getstarted/development-basics/#load-unpacked).
-4. Optionally, run `npm run dev` and start editing the code.
-5. Navigate to a webpage and open the devtools window.
-6. Click on the new devtools panel named "Automerge".
+    * Go to the Extensions page by entering chrome://extensions in a new tab
+    * Enable Developer Mode
+    * Click the Load unpacked button and select the `dist` directory
+4. Navigate to a webpage and open the devtools window.
+5. Click on the new devtools panel named "Automerge".
+
+Code can be live-edited by running `npm run dev` (before step 4?)
 
 ## Acknowledgements
 
