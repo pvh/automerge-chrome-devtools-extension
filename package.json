@@ -13,6 +13,7 @@
   "dependencies": {
     "@automerge/automerge": "^2.2.5",
     "@automerge/automerge-repo": "^1.2.1",
+    "@radix-ui/react-slot": "^1.1.0",
     "@tanstack/react-table": "^8.19.3",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",

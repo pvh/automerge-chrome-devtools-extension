@@ -1,4 +1,4 @@
-import { DataTable } from "./Table";
+import { DataTable } from "./DataTable";
 import { DocHandleInfo, columns } from "./schema";
 import { useState, useEffect } from "react";
 
@@ -28,10 +28,10 @@ const getActiveHandlesInfo = () =>
       let heads = []
       const doc = handle.docSync()
       if (doc) {
-        count = Automerge.getAllChanges(doc).length
+        numberOfChanges = Automerge.getAllChanges(doc).length
         heads = Automerge.getHeads(doc)
       }
-      return { url, state, count, heads }
+      return { url, state, numberOfChanges, heads }
     })
     `,
       (docHandlesInfo, isException) => {
