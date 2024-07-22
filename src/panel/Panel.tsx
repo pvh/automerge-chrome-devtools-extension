@@ -1,11 +1,17 @@
 import { useEffect, useState } from "react";
 import { DataTable } from "./DataTable";
-import { DocHandleInfo, columns } from "./schema";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  DocHandleInfo,
+  docHandleInfoColumns,
+  MessageInfo,
+  messageInfoColumns,
+} from "./schema";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const Panel = () => {
   const [docHandlesInfo, setDocHandlesInfo] = useState<DocHandleInfo[]>([]);
-  const [selectedTab, setSelectedTab] = useState<string>();
+  const [selectedTab, setSelectedTab] = useState<string>("documents");
+  const [messages, setMessages] = useState<MessageInfo[]>([]);
 
   const refreshData = () => {
     getActiveHandlesInfo().then((info) => {
@@ -13,6 +19,7 @@ export const Panel = () => {
     });
   };
 
+  // refresh handle state
   useEffect(() => {
     const interval = setInterval(() => {
       refreshData();
@@ -23,11 +30,30 @@ export const Panel = () => {
     };
   }, []);
 
+  // listen for repo messages
+  useEffect(() => {
+    chrome.runtime.onMessageExternal.addListener((data) => {
+      const { action, message } = data;
+      if (action === "repo-message") {
+        const { type, targetId, senderId, documentId } = message;
+
+        setMessages((messages) =>
+          messages.concat({
+            type,
+            targetId,
+            senderId,
+            documentId,
+            timestamp: Date.now(),
+          })
+        );
+      }
+    });
+  }, []);
+
   return (
     <div className="flex flex-col w-screen h-screen">
       <div className="bg-gray-100">
         <Tabs
-          defaultValue="documents"
           className="w-fit"
           onValueChange={setSelectedTab}
           value={selectedTab}
@@ -44,7 +70,10 @@ export const Panel = () => {
       </div>
       <div className="flex-1 min-h-0 overflow-auto">
         {selectedTab === "documents" && (
-          <DataTable columns={columns} data={docHandlesInfo} />
+          <DataTable columns={docHandleInfoColumns} data={docHandlesInfo} />
+        )}
+        {selectedTab === "messages" && (
+          <DataTable columns={messageInfoColumns} data={messages} />
         )}
       </div>
     </div>

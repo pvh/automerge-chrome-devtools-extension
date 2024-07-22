@@ -17,7 +17,7 @@ export type DocHandleInfo = {
   heads: Automerge.Heads;
 };
 
-export const columns: ColumnDef<DocHandleInfo>[] = [
+export const docHandleInfoColumns: ColumnDef<DocHandleInfo>[] = [
   {
     accessorKey: "url",
     header: "Url",
@@ -53,5 +53,32 @@ export const columns: ColumnDef<DocHandleInfo>[] = [
   {
     accessorKey: "heads",
     header: "Heads",
+  },
+];
+
+export type MessageInfo = {
+  type: string;
+  targetId: string;
+  documentId: string;
+  senderId: string;
+  timestamp: number;
+};
+
+export const messageInfoColumns: ColumnDef<MessageInfo>[] = [
+  {
+    accessorKey: "type",
+    header: "Type",
+  },
+  {
+    accessorKey: "senderId",
+    header: "Sender",
+  },
+  {
+    accessorKey: "targetId",
+    header: "Target",
+  },
+  {
+    accessorKey: "documentId",
+    header: "DocumentId",
   },
 ];

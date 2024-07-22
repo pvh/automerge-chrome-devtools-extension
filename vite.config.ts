@@ -15,6 +15,19 @@ export default defineConfig({
       input: {
         main: "index.html",
         panel: "panel.html",
+        contentScript: "src/contentScript.ts",
+        injected: "src/injected.ts",
+      },
+      output: {
+        entryFileNames: (chunkInfo) => {
+          if (chunkInfo.name === "contentScript") {
+            return "contentScript.js";
+          }
+          if (chunkInfo.name === "injected") {
+            return "injected.js";
+          }
+          return "[name]-[hash].js";
+        },
       },
     },
   },
