@@ -1,14 +1,24 @@
+import { useEffect, useState } from "react";
 import { DataTable } from "./DataTable";
 import { DocHandleInfo, columns } from "./schema";
-import { useState, useEffect } from "react";
 
 export const Panel = () => {
   const [docHandlesInfo, setDocHandlesInfo] = useState<DocHandleInfo[]>([]);
 
-  useEffect(() => {
+  const refreshData = () => {
     getActiveHandlesInfo().then((info) => {
       setDocHandlesInfo(info);
     });
+  };
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refreshData();
+    }, 1000);
+
+    return () => {
+      clearInterval(interval);
+    };
   }, []);
 
   return (

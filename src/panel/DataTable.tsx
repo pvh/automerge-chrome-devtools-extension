@@ -21,18 +21,6 @@ type DataTableProps<TData, TValue> = {
   data: TData[];
 };
 
-export const sortableHeader = ({ column }) => {
-  return (
-    <Button
-      variant="ghost"
-      onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-    >
-      Email
-      <ArrowUpDown className="ml-2 h-4 w-4" />
-    </Button>
-  );
-};
-
 export const DataTable = <TData, TValue>({
   columns,
   data,
