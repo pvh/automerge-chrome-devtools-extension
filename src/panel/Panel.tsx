@@ -32,21 +32,23 @@ export const Panel = () => {
 
   // listen for repo messages
   useEffect(() => {
-    chrome.runtime.onMessageExternal.addListener((data) => {
-      const { action, message } = data;
-      if (action === "repo-message") {
-        const { type, targetId, senderId, documentId } = message;
+    getPortIdOfActiveTab().then((activePortId) => {
+      chrome.runtime.onMessageExternal.addListener((data) => {
+        const { action, message, portId } = data;
+        if (action === "repo-message" && portId === activePortId) {
+          const { type, targetId, senderId, documentId } = message;
 
-        setMessages((messages) =>
-          messages.concat({
-            type,
-            targetId,
-            senderId,
-            documentId,
-            timestamp: Date.now(),
-          })
-        );
-      }
+          setMessages((messages) =>
+            messages.concat({
+              type,
+              targetId,
+              senderId,
+              documentId,
+              timestamp: Date.now(),
+            })
+          );
+        }
+      });
     });
   }, []);
 
@@ -103,6 +105,21 @@ const getActiveHandlesInfo = () =>
         }
 
         resolve(docHandlesInfo as DocHandleInfo[]);
+      }
+    );
+  });
+
+const getPortIdOfActiveTab = () =>
+  new Promise<number>((resolve, reject) => {
+    chrome.devtools.inspectedWindow.eval(
+      "window.repo.__AUTOMERGE_DEVTOOLS__PORT_ID__",
+      (docHandlesInfo, isException) => {
+        if (isException) {
+          reject();
+          return;
+        }
+
+        resolve(docHandlesInfo as number);
       }
     );
   });
