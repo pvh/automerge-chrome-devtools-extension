@@ -7,6 +7,7 @@ import {
   messageInfoColumns,
 } from "./schema";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 
 export const Panel = () => {
   const [docHandleStates, setDocHandlesInfo] = useState<DocHandleState[]>([]);
@@ -52,9 +53,13 @@ export const Panel = () => {
     });
   }, []);
 
+  const handleClearMessages = () => {
+    setMessages([]);
+  };
+
   return (
     <div className="flex flex-col w-screen h-screen">
-      <div className="bg-gray-100">
+      <div className="bg-gray-100 flex">
         <Tabs
           className="w-fit"
           onValueChange={setSelectedTab}
@@ -69,6 +74,10 @@ export const Panel = () => {
             </TabsTrigger>
           </TabsList>
         </Tabs>
+        <div className="flex-1" />
+        <Button variant="ghost" onClick={handleClearMessages}>
+          clear messages
+        </Button>
       </div>
       <div className="flex-1 min-h-0 overflow-auto">
         {selectedTab === "documents" && (
