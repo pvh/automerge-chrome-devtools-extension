@@ -1,17 +1,17 @@
 import { useEffect, useState } from "react";
 import { DataTable } from "./DataTable";
 import {
-  DocHandleInfo,
-  docHandleInfoColumns,
-  MessageInfo,
+  DocHandleState,
+  docHandleStateColumns,
+  Message,
   messageInfoColumns,
 } from "./schema";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const Panel = () => {
-  const [docHandlesInfo, setDocHandlesInfo] = useState<DocHandleInfo[]>([]);
+  const [docHandleStates, setDocHandlesInfo] = useState<DocHandleState[]>([]);
   const [selectedTab, setSelectedTab] = useState<string>("documents");
-  const [messages, setMessages] = useState<MessageInfo[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
 
   const refreshData = () => {
     getActiveHandlesInfo().then((info) => {
@@ -62,7 +62,7 @@ export const Panel = () => {
         >
           <TabsList className="grid w-full grid-cols-2 rounded-none justify-start">
             <TabsTrigger value="documents" className="w-fit">
-              Documents ({docHandlesInfo.length})
+              Documents ({docHandleStates.length})
             </TabsTrigger>
             <TabsTrigger value="messages" className="w-fit">
               Messages
@@ -72,7 +72,10 @@ export const Panel = () => {
       </div>
       <div className="flex-1 min-h-0 overflow-auto">
         {selectedTab === "documents" && (
-          <DataTable columns={docHandleInfoColumns} data={docHandlesInfo} />
+          <DataTable
+            columns={docHandleStateColumns}
+            data={docHandleStatesWithMessages(docHandleStates, messages)}
+          />
         )}
         {selectedTab === "messages" && (
           <DataTable columns={messageInfoColumns} data={messages} />
@@ -83,7 +86,7 @@ export const Panel = () => {
 };
 
 const getActiveHandlesInfo = () =>
-  new Promise<DocHandleInfo[]>((resolve, reject) => {
+  new Promise<DocHandleState[]>((resolve, reject) => {
     chrome.devtools.inspectedWindow.eval(
       `
     Object.values(window.repo.handles).map((handle) => {
@@ -104,7 +107,7 @@ const getActiveHandlesInfo = () =>
           return;
         }
 
-        resolve(docHandlesInfo as DocHandleInfo[]);
+        resolve(docHandlesInfo as DocHandleState[]);
       }
     );
   });
@@ -123,3 +126,15 @@ const getPortIdOfActiveTab = () =>
       }
     );
   });
+
+const docHandleStatesWithMessages = (
+  states: DocHandleState[],
+  messages: Message[]
+) => {
+  return states.map((state) => ({
+    ...state,
+    messages: messages.filter(
+      (message) => `automerge:${message.documentId}` === state.url
+    ),
+  }));
+};

@@ -3,7 +3,7 @@ import * as Automerge from "@automerge/automerge";
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown } from "lucide-react";
 
-export type DocHandleInfo = {
+export type DocHandleState = {
   url: string;
   state:
     | "idle"
@@ -17,7 +17,11 @@ export type DocHandleInfo = {
   heads: Automerge.Heads;
 };
 
-export const docHandleInfoColumns: ColumnDef<DocHandleInfo>[] = [
+export type DocHandleStateWithMessages = DocHandleState & {
+  messages: Message[];
+};
+
+export const docHandleStateColumns: ColumnDef<DocHandleStateWithMessages>[] = [
   {
     accessorKey: "url",
     header: "Url",
@@ -35,6 +39,11 @@ export const docHandleInfoColumns: ColumnDef<DocHandleInfo>[] = [
         </Button>
       );
     },
+  },
+  {
+    accessorFn: ({ messages }) =>
+      messages.filter(({ type }) => type === "sync").length,
+    header: "Sync messages",
   },
   {
     accessorKey: "numberOfChanges",
@@ -56,7 +65,7 @@ export const docHandleInfoColumns: ColumnDef<DocHandleInfo>[] = [
   },
 ];
 
-export type MessageInfo = {
+export type Message = {
   type: string;
   targetId: string;
   documentId: string;
@@ -64,7 +73,7 @@ export type MessageInfo = {
   timestamp: number;
 };
 
-export const messageInfoColumns: ColumnDef<MessageInfo>[] = [
+export const messageInfoColumns: ColumnDef<Message>[] = [
   {
     accessorKey: "type",
     header: "Type",
