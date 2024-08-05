@@ -1,6 +1,6 @@
 {
-  "name": "Automerge DevTools",
-  "description": "Visibility into the state of Automerge in your window.",
+  "name": "Automerge DevTools 2",
+  "description": "Visibility into the state of Automerge in your window!",
   "version": "1.0",
   "manifest_version": 3,
   "devtools_page": "index.html",
@@ -25,5 +25,6 @@
   ],
   "externally_connectable": {
     "matches": ["<all_urls>"]
-  }
+  },
+  "incognito": "split"
 }
