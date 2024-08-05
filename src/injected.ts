@@ -1,11 +1,12 @@
 import { Repo } from "@automerge/automerge-repo";
+import { RepoMessage } from "node_modules/@automerge/automerge-repo/src";
 
 const TIMEOUT = 5000;
 const startTime = Date.now();
 
-const currentScriptUrl = (document.currentScript! as HTMLScriptElement).src;
+/* const currentScriptUrl = (document.currentScript! as HTMLScriptElement).src;
 const urlParams = new URLSearchParams(new URL(currentScriptUrl).search);
-const extensionId = urlParams.get("extensionId") as string;
+const extensionId = urlParams.get("extensionId") as string; */
 
 const initRepo = () => {
   // @ts-expect-error Property 'repo' does not exist on type 'Window & typeof globalThis'.
@@ -19,23 +20,14 @@ const initRepo = () => {
     return;
   }
 
-  // HACK: set id on repo so Panel can filter out messages from other tabs
-  // @ts-expect-error monkey patch repo
-  const portId = (repo.__AUTOMERGE_DEVTOOLS__PORT_ID__ = Math.round(
-    Math.random() * 10000
-  ));
+  //@ts-expect-error monkey patch repo with messags so dev tool can retrieve them
+  (repo.__DEV_TOOL_BUFFERED_MESSAGES__ = []) as RepoMessage[];
 
   repo.networkSubsystem.addListener("message", (message) => {
-    try {
-      chrome.runtime.sendMessage(extensionId, {
-        portId,
-        action: "repo-message",
-        message,
-      });
-    } catch (err) {
-      console.log("failed", err);
-      // ignore error: send message throws an error if there is no receiver
-    }
+    console.log("message");
+
+    //@ts-expect-error add message to monkey patched message buffer
+    repo.__DEV_TOOL_BUFFERED_MESSAGES__.push(message);
   });
 };
 

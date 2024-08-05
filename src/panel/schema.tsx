@@ -1,7 +1,12 @@
 import { Button } from "@/components/ui/button";
 import * as Automerge from "@automerge/automerge";
+import { RepoMessage } from "@automerge/automerge-repo";
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown } from "lucide-react";
+
+export type RepoMessageWithTimestamp = RepoMessage & {
+  timestamp: number;
+};
 
 export type DocHandleState = {
   url: string;

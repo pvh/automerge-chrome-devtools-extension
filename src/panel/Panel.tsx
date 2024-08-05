@@ -5,52 +5,33 @@ import {
   docHandleStateColumns,
   Message,
   messageInfoColumns,
+  RepoMessageWithTimestamp,
 } from "./schema";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 
 export const Panel = () => {
-  const [docHandleStates, setDocHandlesInfo] = useState<DocHandleState[]>([]);
+  const [docHandleStates, setDocHandleStates] = useState<DocHandleState[]>([]);
   const [selectedTab, setSelectedTab] = useState<string>("documents");
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<RepoMessageWithTimestamp[]>([]);
 
-  const refreshData = () => {
-    getActiveHandlesInfo().then((info) => {
-      setDocHandlesInfo(info);
+  const refreshRepoState = () => {
+    getRepoStateUpdate().then(({ docHandleStates, newMessages }) => {
+      setDocHandleStates(docHandleStates);
+      setMessages((messages) => messages.concat(newMessages));
     });
   };
 
   // refresh handle state
   useEffect(() => {
     const interval = setInterval(() => {
-      refreshData();
-    }, 1000);
+      console.log("refresh");
+      refreshRepoState();
+    }, 500);
 
     return () => {
       clearInterval(interval);
     };
-  }, []);
-
-  // listen for repo messages
-  useEffect(() => {
-    getPortIdOfActiveTab().then((activePortId) => {
-      chrome.runtime.onMessageExternal.addListener((data) => {
-        const { action, message, portId } = data;
-        if (action === "repo-message" && portId === activePortId) {
-          const { type, targetId, senderId, documentId } = message;
-
-          setMessages((messages) =>
-            messages.concat({
-              type,
-              targetId,
-              senderId,
-              documentId,
-              timestamp: Date.now(),
-            })
-          );
-        }
-      });
-    });
   }, []);
 
   const handleClearMessages = () => {
@@ -94,56 +75,54 @@ export const Panel = () => {
   );
 };
 
-const getActiveHandlesInfo = () =>
-  new Promise<DocHandleState[]>((resolve, reject) => {
+type RepoStateUpdate = {
+  newMessages: RepoMessageWithTimestamp[];
+  docHandleStates: DocHandleState[];
+};
+
+const getRepoStateUpdate = () =>
+  new Promise<RepoStateUpdate>((resolve, reject) => {
     chrome.devtools.inspectedWindow.eval(
-      `
-    Object.values(window.repo.handles).map((handle) => {
-      const { url, state } = handle
-      let count = undefined
-      let heads = []
-      const doc = handle.docSync()
-      if (doc) {
-        numberOfChanges = Automerge.getAllChanges(doc).length
-        heads = Automerge.getHeads(doc)
-      }
-      return { url, state, numberOfChanges, heads }
-    })
+      `(() => {
+        const newMessages = window.repo.__DEV_TOOL_BUFFERED_MESSAGES__;
+        repo.__DEV_TOOL_BUFFERED_MESSAGES__ = [];
+        
+        const docHandleStates =Object.values(window.repo.handles).map((handle) => {
+          const { url, state } = handle
+          let count = undefined
+          let heads = []
+          const doc = handle.docSync()
+          if (doc) {
+            numberOfChanges = Automerge.getAllChanges(doc).length
+            heads = Automerge.getHeads(doc)
+          }
+
+          return { url, state, numberOfChanges, heads }
+        })
+
+        return { docHandleStates, newMessages }
+      })()
     `,
-      (docHandlesInfo, isException) => {
+      (repoState, isException) => {
         if (isException) {
+          console.log("failed", isException);
           reject();
           return;
         }
 
-        resolve(docHandlesInfo as DocHandleState[]);
-      }
-    );
-  });
-
-const getPortIdOfActiveTab = () =>
-  new Promise<number>((resolve, reject) => {
-    chrome.devtools.inspectedWindow.eval(
-      "window.repo.__AUTOMERGE_DEVTOOLS__PORT_ID__",
-      (docHandlesInfo, isException) => {
-        if (isException) {
-          reject();
-          return;
-        }
-
-        resolve(docHandlesInfo as number);
+        resolve(repoState as RepoStateUpdate);
       }
     );
   });
 
 const docHandleStatesWithMessages = (
-  states: DocHandleState[],
+  docHandleStates: DocHandleState[],
   messages: Message[]
 ) => {
-  return states.map((state) => ({
-    ...state,
+  return docHandleStates.map((docHandleState) => ({
+    ...docHandleState,
     messages: messages.filter(
-      (message) => `automerge:${message.documentId}` === state.url
+      (message) => `automerge:${message.documentId}` === docHandleState.url
     ),
   }));
 };
