@@ -24,8 +24,6 @@ const initRepo = () => {
   (repo.__DEV_TOOL_BUFFERED_MESSAGES__ = []) as RepoMessage[];
 
   repo.networkSubsystem.addListener("message", (message) => {
-    console.log("message");
-
     //@ts-expect-error add message to monkey patched message buffer
     repo.__DEV_TOOL_BUFFERED_MESSAGES__.push(message);
   });

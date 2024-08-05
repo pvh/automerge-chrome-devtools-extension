@@ -9,11 +9,16 @@ import {
 } from "./schema";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { useAutoScrollUp } from "./hooks";
 
 export const Panel = () => {
   const [docHandleStates, setDocHandleStates] = useState<DocHandleState[]>([]);
   const [selectedTab, setSelectedTab] = useState<string>("documents");
   const [messages, setMessages] = useState<RepoMessageWithTimestamp[]>([]);
+  const [messagesScrollContainer, setMessagesScrollContainer] =
+    useState<HTMLDivElement | null>(null);
+
+  useAutoScrollUp(messagesScrollContainer);
 
   const refreshRepoState = () => {
     getRepoStateUpdate().then(({ docHandleStates, newMessages }) => {
@@ -60,16 +65,25 @@ export const Panel = () => {
           clear messages
         </Button>
       </div>
-      <div className="flex-1 min-h-0 overflow-auto">
-        {selectedTab === "documents" && (
+      <div className="flex-1 min-h-0">
+        <div
+          className={`h-full overflow-auto ${
+            selectedTab !== "documents" ? "hidden" : ""
+          }`}
+        >
           <DataTable
             columns={docHandleStateColumns}
             data={docHandleStatesWithMessages(docHandleStates, messages)}
           />
-        )}
-        {selectedTab === "messages" && (
+        </div>
+        <div
+          className={`h-full overflow-auto ${
+            selectedTab !== "messages" ? "hidden" : ""
+          }`}
+          ref={setMessagesScrollContainer}
+        >
           <DataTable columns={messageInfoColumns} data={messages} />
-        )}
+        </div>
       </div>
     </div>
   );

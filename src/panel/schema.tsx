@@ -4,10 +4,6 @@ import { RepoMessage } from "@automerge/automerge-repo";
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown } from "lucide-react";
 
-export type RepoMessageWithTimestamp = RepoMessage & {
-  timestamp: number;
-};
-
 export type DocHandleState = {
   url: string;
   state:
@@ -23,7 +19,7 @@ export type DocHandleState = {
 };
 
 export type DocHandleStateWithMessages = DocHandleState & {
-  messages: Message[];
+  messages: RepoMessageWithTimestamp[];
 };
 
 export const docHandleStateColumns: ColumnDef<DocHandleStateWithMessages>[] = [
@@ -70,15 +66,11 @@ export const docHandleStateColumns: ColumnDef<DocHandleStateWithMessages>[] = [
   },
 ];
 
-export type Message = {
-  type: string;
-  targetId: string;
-  documentId: string;
-  senderId: string;
+export type RepoMessageWithTimestamp = RepoMessage & {
   timestamp: number;
 };
 
-export const messageInfoColumns: ColumnDef<Message>[] = [
+export const messageInfoColumns: ColumnDef<RepoMessageWithTimestamp>[] = [
   {
     accessorKey: "type",
     header: "Type",
