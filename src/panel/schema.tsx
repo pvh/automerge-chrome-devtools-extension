@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button";
 import * as Automerge from "@automerge/automerge";
-import { RepoMessage } from "@automerge/automerge-repo";
+import { RepoMessage, SyncMessage } from "@automerge/automerge-repo";
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown } from "lucide-react";
+import { formatDuration } from "./utils";
 
 export type DocHandleState = {
   url: string;
@@ -16,6 +17,8 @@ export type DocHandleState = {
     | "deleted";
   numberOfChanges: number;
   heads: Automerge.Heads;
+  syncMessages: RepoMessageWithTimestamp<SyncMessage>;
+  lastSyncedTimestamp?: number;
 };
 
 export type DocHandleStateWithMessages = DocHandleState & {
@@ -47,6 +50,25 @@ export const docHandleStateColumns: ColumnDef<DocHandleStateWithMessages>[] = [
     header: "Sync messages",
   },
   {
+    accessorKey: "lastSyncedTimestamp",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Last synced
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      const timestamp = parseInt(row.getValue("lastSyncedTimestamp"));
+      const duration = timestamp ? formatDuration(Date.now() - timestamp) : "-";
+      return <div className="whitespace-nowrap">{duration}</div>;
+    },
+  },
+  {
     accessorKey: "numberOfChanges",
     header: ({ column }) => {
       return (
@@ -66,9 +88,10 @@ export const docHandleStateColumns: ColumnDef<DocHandleStateWithMessages>[] = [
   },
 ];
 
-export type RepoMessageWithTimestamp = RepoMessage & {
-  timestamp: number;
-};
+export type RepoMessageWithTimestamp<T extends RepoMessage = RepoMessage> =
+  T & {
+    timestamp: number;
+  };
 
 export const messageInfoColumns: ColumnDef<RepoMessageWithTimestamp>[] = [
   {
@@ -82,6 +105,10 @@ export const messageInfoColumns: ColumnDef<RepoMessageWithTimestamp>[] = [
   {
     accessorKey: "targetId",
     header: "Target",
+  },
+  {
+    accessorKey: "timestamp",
+    header: "Timestamp",
   },
   {
     accessorKey: "documentId",

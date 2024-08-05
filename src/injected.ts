@@ -25,7 +25,10 @@ const initRepo = () => {
 
   repo.networkSubsystem.addListener("message", (message) => {
     //@ts-expect-error add message to monkey patched message buffer
-    repo.__DEV_TOOL_BUFFERED_MESSAGES__.push(message);
+    repo.__DEV_TOOL_BUFFERED_MESSAGES__.push({
+      ...message,
+      timestamp: Date.now(),
+    });
   });
 };
 

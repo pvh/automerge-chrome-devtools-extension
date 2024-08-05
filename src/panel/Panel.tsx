@@ -3,7 +3,6 @@ import { DataTable } from "./DataTable";
 import {
   DocHandleState,
   docHandleStateColumns,
-  Message,
   messageInfoColumns,
   RepoMessageWithTimestamp,
 } from "./schema";
@@ -131,12 +130,25 @@ const getRepoStateUpdate = () =>
 
 const docHandleStatesWithMessages = (
   docHandleStates: DocHandleState[],
-  messages: Message[]
+  messages: RepoMessageWithTimestamp[]
 ) => {
-  return docHandleStates.map((docHandleState) => ({
-    ...docHandleState,
-    messages: messages.filter(
-      (message) => `automerge:${message.documentId}` === docHandleState.url
-    ),
-  }));
+  return docHandleStates.map((docHandleState) => {
+    const docMessages = messages.filter(
+      (message) =>
+        "documentId" in message &&
+        `automerge:${message.documentId}` === docHandleState.url
+    );
+
+    const docSyncMessages = docMessages.filter(({ type }) => type === "sync");
+
+    return {
+      ...docHandleState,
+      messages: docMessages,
+      syncMessages: docSyncMessages,
+      lastSyncedTimestamp:
+        docSyncMessages.length > 0
+          ? Math.max(...docSyncMessages.map((msg) => msg.timestamp))
+          : undefined,
+    };
+  });
 };
