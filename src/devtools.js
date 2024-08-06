@@ -12,6 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-chrome.devtools.panels.create("Automerge", "icon.png", "panel.html", () => {
-  console.log("Opened Automerge devtools panel.")
+chrome.devtools.panels.create('Automerge', 'icon.png', 'panel.html', () => {
+  console.log('Opened Automerge devtools panel.')
 })
