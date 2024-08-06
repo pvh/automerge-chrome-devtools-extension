@@ -29,13 +29,14 @@ export type DocHandleStateWithMessages = DocHandleState & {
 export const docHandleStateColumns: ColumnDef<DocHandleStateWithMessages>[] = [
   {
     accessorKey: "url",
-    header: "Url",
+    header: () => <div className="px-2 py-1">Url</div>,
   },
   {
     accessorKey: "state",
     header: ({ column }) => {
       return (
         <Button
+          className="px-2 py-1"
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
@@ -46,15 +47,21 @@ export const docHandleStateColumns: ColumnDef<DocHandleStateWithMessages>[] = [
     },
   },
   {
+    id: "numberOfSyncMessages",
     accessorFn: ({ messages }) =>
       messages.filter(({ type }) => type === "sync").length,
-    header: "Sync messages",
+    header: () => <div className="px-2 py-1">Sync messages</div>,
+    cell: ({ row }) => {
+      const value = parseInt(row.getValue("numberOfSyncMessages"));
+      return <div className="text-right">{value}</div>;
+    },
   },
   {
     accessorKey: "lastSyncedTimestamp",
     header: ({ column }) => {
       return (
         <Button
+          className="px-2 py-1"
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
@@ -66,7 +73,7 @@ export const docHandleStateColumns: ColumnDef<DocHandleStateWithMessages>[] = [
     cell: ({ row }) => {
       const timestamp = parseInt(row.getValue("lastSyncedTimestamp"));
       const duration = timestamp ? formatDuration(Date.now() - timestamp) : "-";
-      return <div className="whitespace-nowrap">{duration}</div>;
+      return <div className="whitespace-nowrap text-right">{duration}</div>;
     },
   },
   {
@@ -75,12 +82,17 @@ export const docHandleStateColumns: ColumnDef<DocHandleStateWithMessages>[] = [
       return (
         <Button
           variant="ghost"
+          className="px-2 py-1"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
           Changes
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
+    },
+    cell: ({ row }) => {
+      const value = row.getValue<number>("numberOfChanges");
+      return <div className="text-right">{value}</div>;
     },
   },
   {
@@ -89,7 +101,7 @@ export const docHandleStateColumns: ColumnDef<DocHandleStateWithMessages>[] = [
       return (
         <Button
           variant="ghost"
-          className="px-0"
+          className="px-2 py-1"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
           Ops
@@ -99,12 +111,12 @@ export const docHandleStateColumns: ColumnDef<DocHandleStateWithMessages>[] = [
     },
     cell: ({ row }) => {
       const value = row.getValue<number>("numberOfOps") ?? "-";
-      return <div className="whitespace-nowrap">{value}</div>;
+      return <div className="text-right">{value}</div>;
     },
   },
   {
     accessorKey: "heads",
-    header: "Heads",
+    header: () => <div className="px-2 py-1">Heads</div>,
   },
 ];
 
@@ -116,22 +128,22 @@ export type RepoMessageWithTimestamp<T extends RepoMessage = RepoMessage> =
 export const messageInfoColumns: ColumnDef<RepoMessageWithTimestamp>[] = [
   {
     accessorKey: "type",
-    header: "Type",
+    header: () => <div className="px-2 py-1">Type</div>,
   },
   {
     accessorKey: "senderId",
-    header: "Sender",
+    header: () => <div className="px-2 py-1">Sender</div>,
   },
   {
     accessorKey: "targetId",
-    header: "Target",
+    header: () => <div className="px-2 py-1">Target</div>,
   },
   {
     accessorKey: "timestamp",
-    header: "Timestamp",
+    header: () => <div className="px-2 py-1">Timestamp</div>,
   },
   {
     accessorKey: "documentId",
-    header: "DocumentId",
+    header: () => <div className="px-2 py-1">Document ID</div>,
   },
 ];
