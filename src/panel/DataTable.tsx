@@ -76,11 +76,7 @@ export const DataTable = <TData, TValue>({
             </TableRow>
           ))
         ) : (
-          <TableRow>
-            <TableCell colSpan={columns.length} className="h-24 text-center">
-              No results.
-            </TableCell>
-          </TableRow>
+          <TableRow></TableRow>
         )}
       </TableBody>
     </Table>

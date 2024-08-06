@@ -16,6 +16,7 @@ export type DocHandleState = {
     | "unavailable"
     | "deleted";
   numberOfChanges: number;
+  numberOfOps?: number;
   heads: Automerge.Heads;
   syncMessages: RepoMessageWithTimestamp<SyncMessage>;
   lastSyncedTimestamp?: number;
@@ -80,6 +81,24 @@ export const docHandleStateColumns: ColumnDef<DocHandleStateWithMessages>[] = [
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
+    },
+  },
+  {
+    accessorKey: "numberOfOps",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Ops
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      const value = row.getValue<number>("numberOfOps") ?? "-";
+      return <div className="whitespace-nowrap">{value}</div>;
     },
   },
   {

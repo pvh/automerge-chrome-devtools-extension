@@ -100,17 +100,30 @@ const getRepoStateUpdate = () =>
         const newMessages = window.repo.__DEV_TOOL_BUFFERED_MESSAGES__;
         repo.__DEV_TOOL_BUFFERED_MESSAGES__ = [];
         
-        const docHandleStates =Object.values(window.repo.handles).map((handle) => {
+        const docHandleStates = Object.values(window.repo.handles).map((handle) => {
           const { url, state } = handle
           let count = undefined
           let heads = []
           const doc = handle.docSync()
+
+          let numberOfChanges, numberOfOps
+
           if (doc) {
-            numberOfChanges = Automerge.getAllChanges(doc).length
             heads = Automerge.getHeads(doc)
+            
+            // this is a new api that requires @automerge/automerge >= 2.2.8
+            if (Automerge.stats) { 
+              const stats = Automerge.stats(doc)
+              numberOfChanges = stats.numChanges
+              numberOfOps = stats.numOps
+
+            // as a fallback we use getAllChanges
+            } else {
+              numberOfChanges = Automerge.getAllChanges(doc).length            
+            }
           }
 
-          return { url, state, numberOfChanges, heads }
+          return { url, state, numberOfChanges, numberOfOps, heads }
         })
 
         return { docHandleStates, newMessages }
