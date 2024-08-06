@@ -3,12 +3,14 @@ import { DataTable } from "./DataTable";
 import {
   DocHandleState,
   docHandleStateColumns,
+  DocHandleStateWithMessages,
   messageInfoColumns,
   RepoMessageWithTimestamp,
 } from "./schema";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useAutoScrollUp } from "./hooks";
+import { SyncMessage } from "@automerge/automerge-repo";
 
 export const Panel = () => {
   const [docHandleStates, setDocHandleStates] = useState<DocHandleState[]>([]);
@@ -144,7 +146,7 @@ const getRepoStateUpdate = () =>
 const docHandleStatesWithMessages = (
   docHandleStates: DocHandleState[],
   messages: RepoMessageWithTimestamp[]
-) => {
+): DocHandleStateWithMessages[] => {
   return docHandleStates.map((docHandleState) => {
     const docMessages = messages.filter(
       (message) =>
@@ -152,7 +154,9 @@ const docHandleStatesWithMessages = (
         `automerge:${message.documentId}` === docHandleState.url
     );
 
-    const docSyncMessages = docMessages.filter(({ type }) => type === "sync");
+    const docSyncMessages = docMessages.filter(
+      ({ type }) => type === "sync"
+    ) as RepoMessageWithTimestamp<SyncMessage>[];
 
     return {
       ...docHandleState,

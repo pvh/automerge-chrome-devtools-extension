@@ -18,7 +18,7 @@ export type DocHandleState = {
   numberOfChanges: number;
   numberOfOps?: number;
   heads: Automerge.Heads;
-  syncMessages: RepoMessageWithTimestamp<SyncMessage>;
+  syncMessages: RepoMessageWithTimestamp<SyncMessage>[];
   lastSyncedTimestamp?: number;
 };
 
@@ -89,6 +89,7 @@ export const docHandleStateColumns: ColumnDef<DocHandleStateWithMessages>[] = [
       return (
         <Button
           variant="ghost"
+          className="px-0"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
           Ops
