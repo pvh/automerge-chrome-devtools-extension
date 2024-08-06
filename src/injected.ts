@@ -2,6 +2,7 @@ import { Repo } from "@automerge/automerge-repo";
 import { RepoMessage } from "node_modules/@automerge/automerge-repo/src";
 
 const TIMEOUT = 5000;
+const MAX_BUFFERED_MESSAGES = 1000;
 const startTime = Date.now();
 
 /* const currentScriptUrl = (document.currentScript! as HTMLScriptElement).src;
@@ -25,7 +26,14 @@ const initRepo = () => {
 
   repo.networkSubsystem.addListener("message", (message) => {
     //@ts-expect-error add message to monkey patched message buffer
-    repo.__DEV_TOOL_BUFFERED_MESSAGES__.push({
+    const bufferedMessages = repo.__DEV_TOOL_BUFFERED_MESSAGES__;
+
+    // drop earlier messages if we reached the limit
+    if (bufferedMessages.length === MAX_BUFFERED_MESSAGES) {
+      bufferedMessages.shift();
+    }
+
+    bufferedMessages.push({
       ...message,
       timestamp: Date.now(),
     });
