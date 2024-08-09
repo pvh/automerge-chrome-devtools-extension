@@ -9,12 +9,55 @@ import {
 } from "./schema";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { useAutoScrollUp } from "./hooks";
+import { useAutoScrollUp, useLocalstorageState } from "./hooks";
 import { SyncMessage } from "@automerge/automerge-repo";
+import { Server } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export const Panel = () => {
   const [docHandleStates, setDocHandleStates] = useState<DocHandleState[]>([]);
   const [selectedTab, setSelectedTab] = useState<string>("documents");
+
+  const [username, setUsername] = useLocalstorageState("username", "");
+  const [password, setPassword] = useLocalstorageState("password", "");
+
+  const [tempUsername, setTempUsername] = useState("");
+  const [tempPassword, setTempPassword] = useState("");
+  const [loginState, setLoginState] = useState<"loading" | "error" | "idle">(
+    "idle"
+  );
+
+  const isLoggedIn = username && password;
+
+  console.log({ username, password });
+
+  const onLogIn = async () => {
+    if (!tempUsername || !tempPassword) {
+      return;
+    }
+
+    setLoginState("loading");
+    const response = await fetchSyncServerMetrics(tempUsername, tempPassword);
+
+    if (response) {
+      setUsername(tempUsername);
+      setPassword(tempPassword);
+    } else {
+      setLoginState("error");
+    }
+  };
+
+  const onLogOut = () => {
+    setUsername("");
+    setPassword("");
+  };
+
   const [messages, setMessages] = useState<RepoMessageWithTimestamp[]>([]);
   const [messagesScrollContainer, setMessagesScrollContainer] =
     useState<HTMLDivElement | null>(null);
@@ -31,7 +74,6 @@ export const Panel = () => {
   // refresh handle state
   useEffect(() => {
     const interval = setInterval(() => {
-      console.log("refresh");
       refreshRepoState();
     }, 500);
 
@@ -46,7 +88,7 @@ export const Panel = () => {
 
   return (
     <div className="flex flex-col w-screen h-screen">
-      <div className="bg-gray-100 flex">
+      <div className="bg-gray-100 flex gap-2 items-center px-2">
         <Tabs
           className="w-fit"
           onValueChange={setSelectedTab}
@@ -62,9 +104,71 @@ export const Panel = () => {
           </TabsList>
         </Tabs>
         <div className="flex-1" />
-        <Button variant="ghost" onClick={handleClearMessages}>
+
+        <Button
+          variant="ghost"
+          className="p-0 px-2"
+          onClick={handleClearMessages}
+        >
           clear messages
         </Button>
+
+        <div className="border border-l border-gray-300"></div>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="sm" variant="outline" className="p-0 px-2 flex gap-2">
+              <Server
+                size={16}
+                className={isLoggedIn ? "text-green-500" : "text-gray-400"}
+              />
+              Server Metrics
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            className="p-4 flex flex-col gap-2 w-[300px]"
+            align="end"
+          >
+            {isLoggedIn ? (
+              <Button onClick={onLogOut}>Log out</Button>
+            ) : (
+              <>
+                <div className="pb-4">
+                  You need to provide user credentials to view the sync server
+                  metrics
+                </div>
+
+                {loginState === "error" && (
+                  <div className="text-red-500">Invalid credentials</div>
+                )}
+
+                <div className="grid w-full max-w-sm items-center gap-1.5">
+                  <Label htmlFor="username">Username</Label>
+                  <Input
+                    id="username"
+                    type="text"
+                    value={tempUsername}
+                    onChange={(evt) => setTempUsername(evt.target.value)}
+                  />
+                </div>
+
+                <div className="grid w-full max-w-sm items-center gap-1.5">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={tempPassword}
+                    onChange={(evt) => setTempPassword(evt.target.value)}
+                  />
+                </div>
+
+                <Button onClick={onLogIn} disabled={loginState === "loading"}>
+                  Log in
+                </Button>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
       <div className="flex-1 min-h-0">
         <div
@@ -133,7 +237,6 @@ const getRepoStateUpdate = () =>
     `,
       (repoState, isException) => {
         if (isException) {
-          console.log("failed", isException);
           reject();
           return;
         }
@@ -168,4 +271,17 @@ const docHandleStatesWithMessages = (
           : undefined,
     };
   });
+};
+
+const SYNC_SERVER_METRICS_URL = "https://sync.automerge.org/metrics";
+
+const fetchSyncServerMetrics = async (username: string, password: string) => {
+  return fetch(SYNC_SERVER_METRICS_URL, {
+    method: "GET",
+    headers: {
+      Authorization: "Basic " + btoa(username + ":" + password),
+    },
+  })
+    .then((response) => response.json())
+    .catch(() => null);
 };

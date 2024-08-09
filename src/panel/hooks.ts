@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export const useAutoScrollUp = (container: HTMLElement | null) => {
   const isScrolledToBottomRef = useRef<boolean>(true);
@@ -29,4 +29,18 @@ export const useAutoScrollUp = (container: HTMLElement | null) => {
       };
     }
   }, [container, handleScroll, scrollToBottom]);
+};
+
+export const useLocalstorageState = <T>(key: string, initialValue: T) => {
+  const [state, setState] = useState(() => {
+    const storedValue = localStorage.getItem(key);
+    return storedValue !== null ? JSON.parse(storedValue) : initialValue;
+  });
+
+  const setLocalStorageState = (value: T) => {
+    setState(value);
+    localStorage.setItem(key, JSON.stringify(value));
+  };
+
+  return [state, setLocalStorageState];
 };
