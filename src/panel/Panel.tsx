@@ -13,13 +13,14 @@ import { Button } from "@/components/ui/button";
 import { useAutoScrollUp, useLocalstorageState } from "./hooks";
 import { AutomergeUrl, SyncMessage } from "@automerge/automerge-repo";
 import { Server } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 const CLIENT_REFRESH_INTERVAL = 500;
 const SERVER_REFRESH_INTERVAL = 1000;
@@ -141,8 +142,8 @@ export const Panel = () => {
 
         <div className="border border-l border-gray-300"></div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+        <Popover>
+          <PopoverTrigger asChild>
             <Button size="sm" variant="outline" className="p-0 px-2 flex gap-2">
               <Server
                 size={16}
@@ -150,8 +151,8 @@ export const Panel = () => {
               />
               Server Metrics
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
+          </PopoverTrigger>
+          <PopoverContent
             className="p-4 flex flex-col gap-2 w-[300px]"
             align="end"
           >
@@ -160,6 +161,7 @@ export const Panel = () => {
             ) : (
               <form
                 onSubmit={(evt) => {
+                  evt.preventDefault();
                   evt.stopPropagation();
                   onLogIn();
                 }}
@@ -177,7 +179,6 @@ export const Panel = () => {
                 <div className="grid w-full max-w-sm items-center gap-1.5">
                   <Label htmlFor="username">Username</Label>
                   <Input
-                    tabIndex={0}
                     id="username"
                     type="text"
                     value={tempUsername}
@@ -188,7 +189,6 @@ export const Panel = () => {
                 <div className="grid w-full max-w-sm items-center gap-1.5">
                   <Label htmlFor="password">Password</Label>
                   <Input
-                    tabIndex={0}
                     id="password"
                     type="password"
                     value={tempPassword}
@@ -201,8 +201,8 @@ export const Panel = () => {
                 </Button>
               </form>
             )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+          </PopoverContent>
+        </Popover>
       </div>
       <div className="flex-1 min-h-0">
         <div
