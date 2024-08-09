@@ -36,6 +36,7 @@ export const Panel = () => {
 
   const [tempUsername, setTempUsername] = useState("");
   const [tempPassword, setTempPassword] = useState("");
+
   const [loginState, setLoginState] = useState<"loading" | "error" | "idle">(
     "idle"
   );
@@ -48,6 +49,8 @@ export const Panel = () => {
     useState<Record<AutomergeUrl, DocHandleServerMetrics> | null>(null);
 
   const isLoggedIn = username && password;
+  const failedToLoadServerMetrics =
+    isLoggedIn && !docHandleServerMetricsByDocUrl;
 
   const onLogIn = async () => {
     if (!tempUsername || !tempPassword) {
@@ -61,6 +64,7 @@ export const Panel = () => {
       setUsername(tempUsername);
       setPassword(tempPassword);
       setLoginState("idle");
+      setDocHandleServerMetricsByDocUrl(response);
     } else {
       setLoginState("error");
     }
@@ -89,8 +93,6 @@ export const Panel = () => {
 
     const metrics = await fetchSyncServerMetrics(username, password);
     setDocHandleServerMetricsByDocUrl(metrics);
-
-    console.log(metrics);
   }, [password, username]);
 
   // refresh handle state
@@ -147,7 +149,13 @@ export const Panel = () => {
             <Button size="sm" variant="outline" className="p-0 px-2 flex gap-2">
               <Server
                 size={16}
-                className={isLoggedIn ? "text-green-500" : "text-gray-400"}
+                className={
+                  failedToLoadServerMetrics
+                    ? "text-red-500"
+                    : isLoggedIn
+                    ? "text-green-500"
+                    : "text-gray-400"
+                }
               />
               Server Metrics
             </Button>
@@ -157,7 +165,15 @@ export const Panel = () => {
             align="end"
           >
             {isLoggedIn ? (
-              <Button onClick={onLogOut}>Log out</Button>
+              <>
+                <div className="pb-4 text-base">
+                  {failedToLoadServerMetrics
+                    ? "Failed to load sync service metrics"
+                    : "Sync server metrics are up to date"}
+                </div>
+
+                <Button onClick={onLogOut}>Log out</Button>
+              </>
             ) : (
               <form
                 onSubmit={(evt) => {
@@ -167,7 +183,7 @@ export const Panel = () => {
                 }}
                 className="flex flex-col gap-2"
               >
-                <div className="pb-4">
+                <div className="pb-4 text-base">
                   You need to provide user credentials to view the sync server
                   metrics
                 </div>
