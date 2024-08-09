@@ -1,16 +1,17 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { DataTable } from "./DataTable";
 import {
-  DocHandleState,
-  docHandleStateColumns,
-  DocHandleStateWithMessages,
+  DocHandleClientMetrics,
+  docHandleMetricsColumns,
+  DocHandleMetrics,
   messageInfoColumns,
   RepoMessageWithTimestamp,
+  DocHandleServerMetrics,
 } from "./schema";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useAutoScrollUp, useLocalstorageState } from "./hooks";
-import { SyncMessage } from "@automerge/automerge-repo";
+import { AutomergeUrl, SyncMessage } from "@automerge/automerge-repo";
 import { Server } from "lucide-react";
 import {
   DropdownMenu,
@@ -20,8 +21,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+const CLIENT_REFRESH_INTERVAL = 500;
+const SERVER_REFRESH_INTERVAL = 1000;
+
 export const Panel = () => {
-  const [docHandleStates, setDocHandleStates] = useState<DocHandleState[]>([]);
+  const [docHandlesClientMetrics, setDocHandlesClientMetrics] = useState<
+    DocHandleClientMetrics[]
+  >([]);
   const [selectedTab, setSelectedTab] = useState<string>("documents");
 
   const [username, setUsername] = useLocalstorageState("username", "");
@@ -33,9 +39,14 @@ export const Panel = () => {
     "idle"
   );
 
-  const isLoggedIn = username && password;
+  const [messages, setMessages] = useState<RepoMessageWithTimestamp[]>([]);
+  const [messagesScrollContainer, setMessagesScrollContainer] =
+    useState<HTMLDivElement | null>(null);
 
-  console.log({ username, password });
+  const [docHandleServerMetricsByDocUrl, setDocHandleServerMetricsByDocUrl] =
+    useState<Record<AutomergeUrl, DocHandleServerMetrics> | null>(null);
+
+  const isLoggedIn = username && password;
 
   const onLogIn = async () => {
     if (!tempUsername || !tempPassword) {
@@ -48,6 +59,7 @@ export const Panel = () => {
     if (response) {
       setUsername(tempUsername);
       setPassword(tempPassword);
+      setLoginState("idle");
     } else {
       setLoginState("error");
     }
@@ -56,31 +68,45 @@ export const Panel = () => {
   const onLogOut = () => {
     setUsername("");
     setPassword("");
+    setTempPassword("");
+    setTempUsername("");
   };
-
-  const [messages, setMessages] = useState<RepoMessageWithTimestamp[]>([]);
-  const [messagesScrollContainer, setMessagesScrollContainer] =
-    useState<HTMLDivElement | null>(null);
 
   useAutoScrollUp(messagesScrollContainer);
 
-  const refreshRepoState = () => {
+  const refreshRepoState = useCallback(() => {
     getRepoStateUpdate().then(({ docHandleStates, newMessages }) => {
-      setDocHandleStates(docHandleStates);
+      setDocHandlesClientMetrics(docHandleStates);
       setMessages((messages) => messages.concat(newMessages));
     });
-  };
+  }, []);
+
+  const refreshSyncServerMetrics = useCallback(async () => {
+    if (!username || !password) {
+      setDocHandleServerMetricsByDocUrl(null);
+    }
+
+    const metrics = await fetchSyncServerMetrics(username, password);
+    setDocHandleServerMetricsByDocUrl(metrics);
+
+    console.log(metrics);
+  }, [password, username]);
 
   // refresh handle state
   useEffect(() => {
-    const interval = setInterval(() => {
+    const clientInterval = setInterval(() => {
       refreshRepoState();
-    }, 500);
+    }, CLIENT_REFRESH_INTERVAL);
+
+    const serverInterval = setInterval(() => {
+      refreshSyncServerMetrics();
+    }, SERVER_REFRESH_INTERVAL);
 
     return () => {
-      clearInterval(interval);
+      clearInterval(clientInterval);
+      clearInterval(serverInterval);
     };
-  }, []);
+  }, [refreshSyncServerMetrics, refreshRepoState]);
 
   const handleClearMessages = () => {
     setMessages([]);
@@ -96,7 +122,7 @@ export const Panel = () => {
         >
           <TabsList className="grid w-full grid-cols-2 rounded-none justify-start">
             <TabsTrigger value="documents" className="w-fit">
-              Documents ({docHandleStates.length})
+              Documents ({docHandlesClientMetrics.length})
             </TabsTrigger>
             <TabsTrigger value="messages" className="w-fit">
               Messages
@@ -132,7 +158,13 @@ export const Panel = () => {
             {isLoggedIn ? (
               <Button onClick={onLogOut}>Log out</Button>
             ) : (
-              <>
+              <form
+                onSubmit={(evt) => {
+                  evt.stopPropagation();
+                  onLogIn();
+                }}
+                className="flex flex-col gap-2"
+              >
                 <div className="pb-4">
                   You need to provide user credentials to view the sync server
                   metrics
@@ -145,6 +177,7 @@ export const Panel = () => {
                 <div className="grid w-full max-w-sm items-center gap-1.5">
                   <Label htmlFor="username">Username</Label>
                   <Input
+                    tabIndex={0}
                     id="username"
                     type="text"
                     value={tempUsername}
@@ -155,6 +188,7 @@ export const Panel = () => {
                 <div className="grid w-full max-w-sm items-center gap-1.5">
                   <Label htmlFor="password">Password</Label>
                   <Input
+                    tabIndex={0}
                     id="password"
                     type="password"
                     value={tempPassword}
@@ -165,7 +199,7 @@ export const Panel = () => {
                 <Button onClick={onLogIn} disabled={loginState === "loading"}>
                   Log in
                 </Button>
-              </>
+              </form>
             )}
           </DropdownMenuContent>
         </DropdownMenu>
@@ -177,8 +211,12 @@ export const Panel = () => {
           }`}
         >
           <DataTable
-            columns={docHandleStateColumns}
-            data={docHandleStatesWithMessages(docHandleStates, messages)}
+            columns={docHandleMetricsColumns}
+            data={getCombinedDocHandleMetrics(
+              docHandlesClientMetrics,
+              docHandleServerMetricsByDocUrl,
+              messages
+            )}
           />
         </div>
         <div
@@ -196,7 +234,7 @@ export const Panel = () => {
 
 type RepoStateUpdate = {
   newMessages: RepoMessageWithTimestamp[];
-  docHandleStates: DocHandleState[];
+  docHandleStates: DocHandleClientMetrics[];
 };
 
 const getRepoStateUpdate = () =>
@@ -220,16 +258,16 @@ const getRepoStateUpdate = () =>
             // this is a new api that requires @automerge/automerge >= 2.2.8
             if (Automerge.stats) { 
               const stats = Automerge.stats(doc)
-              numberOfChanges = stats.numChanges
-              numberOfOps = stats.numOps
+              numChanges = stats.numChanges
+              numOps = stats.numOps
 
             // as a fallback we use getAllChanges
             } else {
-              numberOfChanges = Automerge.getAllChanges(doc).length            
+              numChanges = Automerge.getAllChanges(doc).length            
             }
           }
 
-          return { url, state, numberOfChanges, numberOfOps, heads }
+          return { url, state, size: { numChanges, numOps }, heads }
         })
 
         return { docHandleStates, newMessages }
@@ -246,15 +284,26 @@ const getRepoStateUpdate = () =>
     );
   });
 
-const docHandleStatesWithMessages = (
-  docHandleStates: DocHandleState[],
+const getCombinedDocHandleMetrics = (
+  docHandlesClientMetrics: DocHandleClientMetrics[],
+  docHandleServerMetricsByDocUrl: Record<
+    AutomergeUrl,
+    DocHandleServerMetrics
+  > | null,
   messages: RepoMessageWithTimestamp[]
-): DocHandleStateWithMessages[] => {
-  return docHandleStates.map((docHandleState) => {
+): DocHandleMetrics[] => {
+  return docHandlesClientMetrics.map((docHandleClientMetrics) => {
+    const docHandleServerMetrics = docHandleServerMetricsByDocUrl
+      ? docHandleServerMetricsByDocUrl[docHandleClientMetrics.url] ?? {
+          size: { numChanges: 0, numOps: 0 },
+          peers: [],
+        }
+      : null;
+
     const docMessages = messages.filter(
       (message) =>
         "documentId" in message &&
-        `automerge:${message.documentId}` === docHandleState.url
+        `automerge:${message.documentId}` === docHandleClientMetrics.url
     );
 
     const docSyncMessages = docMessages.filter(
@@ -262,20 +311,34 @@ const docHandleStatesWithMessages = (
     ) as RepoMessageWithTimestamp<SyncMessage>[];
 
     return {
-      ...docHandleState,
+      ...docHandleClientMetrics,
       messages: docMessages,
       syncMessages: docSyncMessages,
+      size: {
+        numOps: {
+          client: docHandleClientMetrics.size.numOps,
+          server: docHandleServerMetrics?.size.numOps,
+        },
+        numChanges: {
+          client: docHandleClientMetrics.size.numChanges,
+          server: docHandleServerMetrics?.size.numChanges,
+        },
+      },
       lastSyncedTimestamp:
         docSyncMessages.length > 0
           ? Math.max(...docSyncMessages.map((msg) => msg.timestamp))
           : undefined,
+      peers: docHandleServerMetrics?.peers,
     };
   });
 };
 
 const SYNC_SERVER_METRICS_URL = "https://sync.automerge.org/metrics";
 
-const fetchSyncServerMetrics = async (username: string, password: string) => {
+const fetchSyncServerMetrics = async (
+  username: string,
+  password: string
+): Promise<Record<AutomergeUrl, DocHandleServerMetrics> | null> => {
   return fetch(SYNC_SERVER_METRICS_URL, {
     method: "GET",
     headers: {
@@ -283,5 +346,14 @@ const fetchSyncServerMetrics = async (username: string, password: string) => {
     },
   })
     .then((response) => response.json())
+    .then(({ documents }) => {
+      const byDocumentUrl: Record<AutomergeUrl, DocHandleServerMetrics> = {};
+      for (const [documentId, metrics] of Object.entries(documents)) {
+        byDocumentUrl[`automerge:${documentId}` as AutomergeUrl] =
+          metrics as DocHandleServerMetrics;
+      }
+
+      return byDocumentUrl;
+    })
     .catch(() => null);
 };

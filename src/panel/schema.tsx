@@ -1,12 +1,21 @@
 import { Button } from "@/components/ui/button";
 import * as Automerge from "@automerge/automerge";
-import { RepoMessage, SyncMessage } from "@automerge/automerge-repo";
+import {
+  AutomergeUrl,
+  RepoMessage,
+  SyncMessage,
+} from "@automerge/automerge-repo";
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown } from "lucide-react";
 import { formatDuration } from "./utils";
 
-export type DocHandleState = {
-  url: string;
+export type DocHandleServerMetrics = {
+  peers: string[];
+  size: { numChanges: number; numOps: number };
+};
+
+export type DocHandleClientMetrics = {
+  url: AutomergeUrl;
   state:
     | "idle"
     | "ready"
@@ -15,18 +24,28 @@ export type DocHandleState = {
     | "awaitingNetwork"
     | "unavailable"
     | "deleted";
-  numberOfChanges: number;
-  numberOfOps?: number;
+  size: { numChanges: number; numOps: number };
   heads: Automerge.Heads;
   syncMessages: RepoMessageWithTimestamp<SyncMessage>[];
   lastSyncedTimestamp?: number;
 };
 
-export type DocHandleStateWithMessages = DocHandleState & {
+export type DocHandleMetrics = Omit<DocHandleClientMetrics, "size"> & {
+  size: {
+    numChanges: {
+      client: number;
+      server?: number;
+    };
+    numOps: {
+      client: number;
+      server?: number;
+    };
+  };
   messages: RepoMessageWithTimestamp[];
+  peers?: string[];
 };
 
-export const docHandleStateColumns: ColumnDef<DocHandleStateWithMessages>[] = [
+export const docHandleMetricsColumns: ColumnDef<DocHandleMetrics>[] = [
   {
     accessorKey: "url",
     header: () => <div className="px-2 py-1">Url</div>,
@@ -47,12 +66,12 @@ export const docHandleStateColumns: ColumnDef<DocHandleStateWithMessages>[] = [
     },
   },
   {
-    id: "numberOfSyncMessages",
+    id: "numSyncMessages",
     accessorFn: ({ messages }) =>
       messages.filter(({ type }) => type === "sync").length,
     header: () => <div className="px-2 py-1">Sync messages</div>,
     cell: ({ row }) => {
-      const value = parseInt(row.getValue("numberOfSyncMessages"));
+      const value = parseInt(row.getValue("numSyncMessages"));
       return <div className="text-right">{value}</div>;
     },
   },
@@ -77,7 +96,8 @@ export const docHandleStateColumns: ColumnDef<DocHandleStateWithMessages>[] = [
     },
   },
   {
-    accessorKey: "numberOfChanges",
+    accessorKey: "numChanges",
+    accessorFn: (metrics) => metrics.size.numChanges,
     header: ({ column }) => {
       return (
         <Button
@@ -91,12 +111,22 @@ export const docHandleStateColumns: ColumnDef<DocHandleStateWithMessages>[] = [
       );
     },
     cell: ({ row }) => {
-      const value = row.getValue<number>("numberOfChanges");
-      return <div className="text-right">{value}</div>;
+      const { client, server } = row.getValue<{
+        client: number;
+        server: number;
+      }>("numChanges");
+
+      return (
+        <div className="text-right whitespace-nowrap">
+          {client}
+          {server !== undefined && client !== server ? ` / ${server}` : ""}
+        </div>
+      );
     },
   },
   {
-    accessorKey: "numberOfOps",
+    id: "numOps",
+    accessorFn: (metrics) => metrics.size.numOps,
     header: ({ column }) => {
       return (
         <Button
@@ -110,13 +140,44 @@ export const docHandleStateColumns: ColumnDef<DocHandleStateWithMessages>[] = [
       );
     },
     cell: ({ row }) => {
-      const value = row.getValue<number>("numberOfOps") ?? "-";
-      return <div className="text-right">{value}</div>;
+      const { client, server } = row.getValue<{
+        client: number;
+        server: number;
+      }>("numOps");
+
+      return (
+        <div className="text-right whitespace-nowrap">
+          {client}
+          {server !== undefined && client !== server ? ` / ${server}` : ""}
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "peers",
+    header: () => <div className="px-2 py-1">Peers</div>,
+    cell: ({ row }) => {
+      const peers = row.getValue<string[]>("peers");
+
+      return (
+        <div className="text-right whitespace-nowrap">
+          {peers?.length ?? "-"}
+        </div>
+      );
     },
   },
   {
     accessorKey: "heads",
     header: () => <div className="px-2 py-1">Heads</div>,
+    cell: ({ row }) => {
+      const heads = row.getValue<string[]>("heads");
+
+      return (
+        <div className="text-left whitespace-nowrap">
+          {heads.map((head) => head.slice(0, 8)).join(", ")}
+        </div>
+      );
+    },
   },
 ];
 
