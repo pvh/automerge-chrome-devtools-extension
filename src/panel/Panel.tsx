@@ -21,6 +21,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const CLIENT_REFRESH_INTERVAL = 500;
 const SERVER_REFRESH_INTERVAL = 1000;
@@ -44,6 +45,8 @@ export const Panel = () => {
   const [messages, setMessages] = useState<RepoMessageWithTimestamp[]>([]);
   const [messagesScrollContainer, setMessagesScrollContainer] =
     useState<HTMLDivElement | null>(null);
+
+  const [showAllDocHandles, setShowAllDocHandles] = useState(false);
 
   const [docHandleServerMetricsByDocUrl, setDocHandleServerMetricsByDocUrl] =
     useState<Record<AutomergeUrl, DocHandleServerMetrics> | null>(null);
@@ -123,7 +126,7 @@ export const Panel = () => {
           onValueChange={setSelectedTab}
           value={selectedTab}
         >
-          <TabsList className="grid w-full grid-cols-2 rounded-none justify-start">
+          <TabsList className="grid w- grid-cols-2 rounded-none justify-start">
             <TabsTrigger value="documents" className="w-fit">
               Documents ({docHandlesClientMetrics.length})
             </TabsTrigger>
@@ -132,17 +135,34 @@ export const Panel = () => {
             </TabsTrigger>
           </TabsList>
         </Tabs>
+
+        {selectedTab === "messages" && (
+          <Button
+            variant="ghost"
+            className="p-0 px-2"
+            onClick={handleClearMessages}
+          >
+            clear messages
+          </Button>
+        )}
+
+        {selectedTab === "documents" && docHandleServerMetricsByDocUrl && (
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="terms2"
+              checked={showAllDocHandles}
+              onCheckedChange={() => setShowAllDocHandles((show) => !show)}
+            />
+            <label
+              htmlFor="terms2"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              show all documents
+            </label>
+          </div>
+        )}
+
         <div className="flex-1" />
-
-        <Button
-          variant="ghost"
-          className="p-0 px-2"
-          onClick={handleClearMessages}
-        >
-          clear messages
-        </Button>
-
-        <div className="border border-l border-gray-300"></div>
 
         <Popover>
           <PopoverTrigger asChild>
@@ -231,7 +251,8 @@ export const Panel = () => {
             data={getCombinedDocHandleMetrics(
               docHandlesClientMetrics,
               docHandleServerMetricsByDocUrl,
-              messages
+              messages,
+              showAllDocHandles
             )}
           />
         </div>
@@ -306,47 +327,87 @@ const getCombinedDocHandleMetrics = (
     AutomergeUrl,
     DocHandleServerMetrics
   > | null,
-  messages: RepoMessageWithTimestamp[]
+  messages: RepoMessageWithTimestamp[],
+  showAll: boolean
 ): DocHandleMetrics[] => {
-  return docHandlesClientMetrics.map((docHandleClientMetrics) => {
-    const docHandleServerMetrics = docHandleServerMetricsByDocUrl
-      ? docHandleServerMetricsByDocUrl[docHandleClientMetrics.url] ?? {
-          size: { numChanges: 0, numOps: 0 },
-          peers: [],
-        }
-      : null;
+  const hasClientDocumentUrl: Record<AutomergeUrl, true> = {};
 
-    const docMessages = messages.filter(
-      (message) =>
-        "documentId" in message &&
-        `automerge:${message.documentId}` === docHandleClientMetrics.url
-    );
+  const handlesOnClientMetrics = docHandlesClientMetrics.map(
+    (docHandleClientMetrics) => {
+      const docHandleServerMetrics = docHandleServerMetricsByDocUrl
+        ? docHandleServerMetricsByDocUrl[docHandleClientMetrics.url] ?? {
+            size: { numChanges: 0, numOps: 0 },
+            peers: [],
+          }
+        : null;
 
-    const docSyncMessages = docMessages.filter(
-      ({ type }) => type === "sync"
-    ) as RepoMessageWithTimestamp<SyncMessage>[];
+      const docMessages = messages.filter(
+        (message) =>
+          "documentId" in message &&
+          `automerge:${message.documentId}` === docHandleClientMetrics.url
+      );
 
-    return {
-      ...docHandleClientMetrics,
-      messages: docMessages,
-      syncMessages: docSyncMessages,
-      size: {
-        numOps: {
-          client: docHandleClientMetrics.size.numOps,
-          server: docHandleServerMetrics?.size.numOps,
+      const docSyncMessages = docMessages.filter(
+        ({ type }) => type === "sync"
+      ) as RepoMessageWithTimestamp<SyncMessage>[];
+
+      hasClientDocumentUrl[docHandleClientMetrics.url];
+
+      return {
+        ...docHandleClientMetrics,
+        messages: docMessages,
+        syncMessages: docSyncMessages,
+        size: {
+          numOps: {
+            client: docHandleClientMetrics.size.numOps,
+            server: docHandleServerMetrics?.size.numOps,
+          },
+          numChanges: {
+            client: docHandleClientMetrics.size.numChanges,
+            server: docHandleServerMetrics?.size.numChanges,
+          },
         },
-        numChanges: {
-          client: docHandleClientMetrics.size.numChanges,
-          server: docHandleServerMetrics?.size.numChanges,
+        lastSyncedTimestamp:
+          docSyncMessages.length > 0
+            ? Math.max(...docSyncMessages.map((msg) => msg.timestamp))
+            : undefined,
+        peers: docHandleServerMetrics?.peers,
+      };
+    }
+  );
+
+  if (!showAll || !docHandleServerMetricsByDocUrl) {
+    return handlesOnClientMetrics;
+  }
+
+  const handlesNotOnClientMetrics = Object.entries(
+    docHandleServerMetricsByDocUrl
+  ).flatMap(([url, metrics]) => {
+    if (hasClientDocumentUrl[url as AutomergeUrl]) {
+      return [];
+    }
+
+    return [
+      {
+        url: url as AutomergeUrl,
+        messages: [],
+        heads: [], // todo: we don't know the heads
+        syncMessages: [],
+        state: "on server",
+        size: {
+          numOps: {
+            server: metrics.size.numOps,
+          },
+          numChanges: {
+            server: metrics.size.numChanges,
+          },
         },
+        peers: metrics.peers,
       },
-      lastSyncedTimestamp:
-        docSyncMessages.length > 0
-          ? Math.max(...docSyncMessages.map((msg) => msg.timestamp))
-          : undefined,
-      peers: docHandleServerMetrics?.peers,
-    };
+    ];
   });
+
+  return handlesOnClientMetrics.concat(handlesNotOnClientMetrics);
 };
 
 const SYNC_SERVER_METRICS_URL = "https://sync.automerge.org/metrics";

@@ -23,7 +23,8 @@ export type DocHandleClientMetrics = {
     | "requesting"
     | "awaitingNetwork"
     | "unavailable"
-    | "deleted";
+    | "deleted"
+    | "on server"; // not a real state
   size: { numChanges: number; numOps: number };
   heads: Automerge.Heads;
   syncMessages: RepoMessageWithTimestamp<SyncMessage>[];
@@ -33,11 +34,11 @@ export type DocHandleClientMetrics = {
 export type DocHandleMetrics = Omit<DocHandleClientMetrics, "size"> & {
   size: {
     numChanges: {
-      client: number;
+      client?: number;
       server?: number;
     };
     numOps: {
-      client: number;
+      client?: number;
       server?: number;
     };
   };
@@ -72,7 +73,7 @@ export const docHandleMetricsColumns: ColumnDef<DocHandleMetrics>[] = [
     header: () => <div className="px-2 py-1">Sync messages</div>,
     cell: ({ row }) => {
       const value = parseInt(row.getValue("numSyncMessages"));
-      return <div className="text-right">{value}</div>;
+      return <div className="text-right whitespace-nowrap">{value}</div>;
     },
   },
   {
@@ -98,6 +99,22 @@ export const docHandleMetricsColumns: ColumnDef<DocHandleMetrics>[] = [
   {
     accessorKey: "numChanges",
     accessorFn: (metrics) => metrics.size.numChanges,
+    sortingFn: (rowA, rowB) => {
+      const numChangesA = rowA.getValue<{
+        client: number;
+        server: number;
+      }>("numChanges");
+
+      const numChangesB = rowB.getValue<{
+        client: number;
+        server: number;
+      }>("numChanges");
+
+      const a = numChangesA.client ?? numChangesA.server;
+      const b = numChangesB.client ?? numChangesB.server;
+
+      return a < b ? -1 : a === b ? 0 : 1;
+    },
     header: ({ column }) => {
       return (
         <Button
@@ -119,7 +136,9 @@ export const docHandleMetricsColumns: ColumnDef<DocHandleMetrics>[] = [
       return (
         <div className="text-right whitespace-nowrap">
           {client}
-          {server !== undefined && client !== server ? ` / ${server}` : ""}
+          {server !== undefined && client !== server
+            ? `${client ? "/ " : ""} ${server}`
+            : ""}
         </div>
       );
     },
@@ -127,6 +146,22 @@ export const docHandleMetricsColumns: ColumnDef<DocHandleMetrics>[] = [
   {
     id: "numOps",
     accessorFn: (metrics) => metrics.size.numOps,
+    sortingFn: (rowA, rowB) => {
+      const numOpsA = rowA.getValue<{
+        client: number;
+        server: number;
+      }>("numOps");
+
+      const numOpsB = rowB.getValue<{
+        client: number;
+        server: number;
+      }>("numOps");
+
+      const a = numOpsA.client ?? numOpsA.server;
+      const b = numOpsB.client ?? numOpsB.server;
+
+      return a < b ? -1 : a === b ? 0 : 1;
+    },
     header: ({ column }) => {
       return (
         <Button
@@ -148,7 +183,9 @@ export const docHandleMetricsColumns: ColumnDef<DocHandleMetrics>[] = [
       return (
         <div className="text-right whitespace-nowrap">
           {client}
-          {server !== undefined && client !== server ? ` / ${server}` : ""}
+          {server !== undefined && client !== server
+            ? `${client ? "/ " : ""} ${server}`
+            : ""}
         </div>
       );
     },
