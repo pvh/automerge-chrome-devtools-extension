@@ -15,4 +15,4 @@ This extension abuses internal APIs and is likely to break without warning due t
 
 ## Acknowledgements
 
-Initially authored by Peter van Hardenberg. Derived from [Chrome's sample code](https://github.com/GoogleChrome/chrome-extensions-samples/tree/main/api-samples/devtools/inspectedWindow).
+Authored by Peter van Hardenberg & Paul Sonnentag. Derived from [Chrome's sample code](https://github.com/GoogleChrome/chrome-extensions-samples/tree/main/api-samples/devtools/inspectedWindow).
