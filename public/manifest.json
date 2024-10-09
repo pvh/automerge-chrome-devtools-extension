@@ -1,0 +1,30 @@
+{
+  "name": "Automerge DevTools",
+  "description": "Visibility into the state of Automerge in your window!",
+  "version": "1.0",
+  "manifest_version": 3,
+  "devtools_page": "index.html",
+  "icons": {
+    "128": "icon.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": ["contentScript.js"]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "resources": ["injected.js"]
+    }
+  ],
+  "externally_connectable": {
+    "matches": ["<all_urls>"]
+  },
+  "incognito": "split"
+}

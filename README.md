@@ -7,10 +7,12 @@ This extension abuses internal APIs and is likely to break without warning due t
 ## Running this extension
 
 1. Clone this repository.
-2. Load this directory in Chrome as an [unpacked extension](https://developer.chrome.com/docs/extensions/mv3/getstarted/development-basics/#load-unpacked).
-3. Navigate to a webpage and open the devtools window.
-4. Navigate to the new devtools panel named "demo panel", and click on the button.
+2. Build it with `yarn install && yarn build`
+
+3. Load this `dist` directory in Chrome as an [unpacked extension](https://developer.chrome.com/docs/extensions/mv3/getstarted/development-basics/#load-unpacked).
+4. Navigate to a webpage and open the devtools window.
+5. Navigate to the new devtools panel named "Automerge"
 
 ## Acknowledgements
 
-Initially authored by Peter van Hardenberg. Derived from [Chrome's sample code](https://github.com/GoogleChrome/chrome-extensions-samples/tree/main/api-samples/devtools/inspectedWindow).
+Authored by Peter van Hardenberg & Paul Sonnentag. Derived from [Chrome's sample code](https://github.com/GoogleChrome/chrome-extensions-samples/tree/main/api-samples/devtools/inspectedWindow).
